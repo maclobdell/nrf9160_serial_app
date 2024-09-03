@@ -5,17 +5,24 @@
 	  stupid_uart = &uart0;
 	  dumb_uart = &uart1;
 	};
-  };
 
+	aliases {
+		led0 = &led0;
+		led1 = &led1;
+	  };
+  };
+  
 &uart1 {
 	status = "okay";
-    compatible = "nordic,nrf-uarte";  //?
+    compatible = "nordic,nrf-uarte";
+	current-speed = <19200>;
 	pinctrl-0 = <&uart1_default_alt>;
 };
 
 &uart0 {
 	status = "okay";
-    compatible = "nordic,nrf-uarte";  //?
+    compatible = "nordic,nrf-uarte";
+	current-speed = <19200>;
 	pinctrl-0 = <&uart0_default_alt>;
 };
 

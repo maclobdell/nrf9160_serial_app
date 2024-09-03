@@ -7,6 +7,7 @@
 #include <zephyr/kernel.h>
 #include <zephyr/device.h>
 #include <zephyr/drivers/uart.h>
+#include <zephyr/drivers/gpio.h>
 
 #include <string.h>
 
@@ -15,12 +16,18 @@
 
 #define MSG_SIZE 32
 
+#define SLEEP_TIME_MS   1000
+#define LED0_NODE DT_ALIAS(led0)
+#define LED1_NODE DT_ALIAS(led1)
+
 /* queue to store up to 10 messages (aligned to 4-byte boundary) */
 K_MSGQ_DEFINE(uart0_msgq, MSG_SIZE, 10, 4);
 K_MSGQ_DEFINE(uart1_msgq, MSG_SIZE, 10, 4);
 
 static const struct device *const uart0_dev = DEVICE_DT_GET(UART0_DEVICE_NODE);
 static const struct device *const uart1_dev = DEVICE_DT_GET(UART1_DEVICE_NODE);
+
+static const struct gpio_dt_spec led = GPIO_DT_SPEC_GET(LED1_NODE, gpios);
 
 /* receive buffer used in UART ISR callback */
 static char rx_buf0[MSG_SIZE];
@@ -123,6 +130,8 @@ void print_uart1(char *buf)
 
 int main(void)
 {
+	int ret;
+	
 	char tx_buf0[MSG_SIZE];
 	char tx_buf1[MSG_SIZE];
 
@@ -136,8 +145,17 @@ int main(void)
 		return 0;
 	}
 
+	if (!gpio_is_ready_dt(&led)) {
+		return 0;
+	}
+
+	ret = gpio_pin_configure_dt(&led, GPIO_OUTPUT_ACTIVE);
+	if (ret < 0) {
+		return 0;
+	}
+
 	/* configure interrupt and callback to receive data */
-	int ret = uart_irq_callback_user_data_set(uart0_dev, uart0_serial_cb, NULL);
+	ret = uart_irq_callback_user_data_set(uart0_dev, uart0_serial_cb, NULL);
 
 	if (ret < 0) {
 		if (ret == -ENOTSUP) {
@@ -173,11 +191,17 @@ int main(void)
 	print_uart1("UART1: Hello! I'm your echo bot.\r\n");
 	print_uart1("UART1: Tell me something and press enter:\r\n");
 
+    //todo - create a separate thread for each uart
+
 	/* indefinitely wait for input from the user */
-	while (k_msgq_get(&uart0_msgq, &tx_buf0, K_FOREVER) == 0) {
-		print_uart0("Echo: ");
-		print_uart0(tx_buf0);
-		print_uart0("\r\n");
+	//while (k_msgq_get(&uart1_msgq, &tx_buf1, K_FOREVER) == 0) {
+	while (1) {
+		gpio_pin_toggle_dt(&led);
+		print_uart1("ABC");
+		//print_uart1(tx_buf1);
+		//print_uart1("\r\n");
+		k_msleep(SLEEP_TIME_MS);
 	}
+
 	return 0;
 }

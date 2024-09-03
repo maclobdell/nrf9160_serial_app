@@ -17,7 +17,7 @@ source env.sh
 ## Build With
 
 ```
-west build ./ --board nrf9160dk_nrf9160_ns -d ./build -DCONF_FILE="prj.conf"  -DEXTRA_DTC_OVERLAY_FILE="uart_dt.overlay" 
+west build ./ --board nrf9160dk_nrf9160_ns -d ./build -DCONF_FILE="prj.conf"  -DEXTRA_DTC_OVERLAY_FILE="uart_dt.overlay" --pristine
 ```
 
 ## Pin connections
