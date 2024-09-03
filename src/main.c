@@ -10,19 +10,8 @@
 
 #include <string.h>
 
-
-/* change this to any other UART peripheral if desired */
-#define UART0_DEVICE_NODE DT_CHOSEN(zephyr_shell_uart)
-
-#define UART1_DEVICE_NODE DT_CHOSEN(zephyr_console1)
-
-//alternative?
-//#define UART0_DEVICE_NODE DT_CHOSEN(uart0)
-//#define UART1_DEVICE_NODE DT_CHOSEN(uart1)
-
-//another alternative?
-//#define UART0_DEVICE_NODE DT_NODELABEL(uart0);
-//#define UART1_DEVICE_NODE DT_NODELABEL(uart1);
+#define UART0_DEVICE_NODE DT_CHOSEN(stupid_uart)
+#define UART1_DEVICE_NODE DT_CHOSEN(dumb_uart)
 
 #define MSG_SIZE 32
 
@@ -35,14 +24,6 @@ static const struct device *const uart1_dev = DEVICE_DT_GET(UART1_DEVICE_NODE);
 /* receive buffer used in UART ISR callback */
 static char rx_buf[MSG_SIZE];
 static int rx_buf_pos;
-
-//if (!device_is_ready(uart0_dev)) {
-//    return;
-//}
-
-//if (!device_is_ready(uart1_dev)) {
-//    return;
-//}
 
 /*
  * Read characters from UART until line end is detected. Afterwards push the
@@ -95,7 +76,12 @@ int main(void)
 	char tx_buf[MSG_SIZE];
 
 	if (!device_is_ready(uart0_dev)) {
-		printk("UART device not found!");
+		printk("UART0 device not found!");
+		return 0;
+	}
+
+	if (!device_is_ready(uart1_dev)) {
+		printk("UART1 device not found!");
 		return 0;
 	}
 
@@ -104,11 +90,11 @@ int main(void)
 
 	if (ret < 0) {
 		if (ret == -ENOTSUP) {
-			printk("Interrupt-driven UART API support not enabled\n");
+			printk("UART0: Interrupt-driven UART API support not enabled\n");
 		} else if (ret == -ENOSYS) {
-			printk("UART device does not support interrupt-driven API\n");
+			printk("UART0: UART device does not support interrupt-driven API\n");
 		} else {
-			printk("Error setting UART callback: %d\n", ret);
+			printk("UART0: Error setting UART callback: %d\n", ret);
 		}
 		return 0;
 	}
