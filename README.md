@@ -4,16 +4,11 @@ Enable communication on two UARTs
 ## Details
 Started with sample app: v2.7.0/zephyr/samples/drivers/uart/echo_bot
 
-Trying to add second UART. 
-
-Tried to reference device tree node names (uart0 & uart1) are found in 
+Device tree node names (uart0 & uart1) are found in 
    /opt/nordic/ncs/v2.7.0/zephyr/boards/nordic/nrf9160dk/nrf9160dk_nrf9160_common.dtsi
 
-Trying to use overlay file to modify. Not supposed to edit board devicetree files directly.
-Overlay file copied from ncs/v2.7.0/nrf/samples/cellular/modem_shell/bt.overlay
-
 ## Setup Environment 
-  Anyone else will likely need to regenerate env.sh for your system from the Nordic nRF Connect for Desktop Toolchain manager
+  Generate a env.sh for your system with the Nordic nRF Connect for Desktop Toolchain manager
 
 ```
 source env.sh
@@ -59,40 +54,6 @@ west build ./ --board nrf9160dk_nrf9160_ns -d ./build -DCONF_FILE="prj.conf"  -D
   (nRF53) nRF54-RXD (pin 47) P0.05
 ```
 
-# Config
-1. Add this to kconfig file
- CONFIG_SERIAL=y
- CONFIG_UART_ASYNC_API=y	
-
-2. Put this in a devicetree overlay file
-     Apparently the number can't conflict, even between other driver types like spi and uart
-     example, you can't have spi2 and uart2. weird. 
-
-```
-&uart0 {
-	status = "okay";
-	current-speed = <19200>;
-	tx-pin = <29>;
-	rx-pin = <28>;
-	rts-pin = <0xFFFFFFFF>;
-	cts-pin = <0xFFFFFFFF>;
-};
-
-&uart1 {
-	status = "okay";
-	current-speed = <19200>;
-	tx-pin = <1>;
-	rx-pin = <0>;
-	rts-pin = <0xFFFFFFFF>;
-	cts-pin = <0xFFFFFFFF>;
-};
-```
-
 Note: there is also a way to dynamically set uart configuration in the code instead of using the device tree overlay
-  https://academy.nordicsemi.com/courses/nrf-connect-sdk-fundamentals/lessons/lesson-4-serial-communication-uart/topic/uart-driver/
 
-
-
-## USEFUL INFO
-https://academy.nordicsemi.com/courses/nrf-connect-sdk-fundamentals/lessons/lesson-2-reading-buttons-and-controlling-leds/topic/devicetree/
-
+https://academy.nordicsemi.com/courses/nrf-connect-sdk-fundamentals/lessons/lesson-4-serial-communication-uart/topic/uart-driver/
