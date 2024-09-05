@@ -8,21 +8,25 @@
 #include <zephyr/device.h>
 #include <zephyr/drivers/uart.h>
 #include <zephyr/drivers/gpio.h>
-
 #include <string.h>
 
 #define UART0_DEVICE_NODE DT_CHOSEN(stupid_uart)
 #define UART1_DEVICE_NODE DT_CHOSEN(dumb_uart)
 
-#define MSG_SIZE 32
+#define MSG_SIZE 200
+/* size of stack area used by each thread */
+#define STACKSIZE 1024
+/* scheduling priority used by each thread */
+#define PRIORITY 7
 
 #define SLEEP_TIME_MS   1000
+
 #define LED0_NODE DT_ALIAS(led0)
 #define LED1_NODE DT_ALIAS(led1)
 
-/* queue to store up to 10 messages (aligned to 4-byte boundary) */
-K_MSGQ_DEFINE(uart0_msgq, MSG_SIZE, 10, 4);
-K_MSGQ_DEFINE(uart1_msgq, MSG_SIZE, 10, 4);
+/* queue to store up to 20 messages (aligned to 4-byte boundary) */
+K_MSGQ_DEFINE(uart0_msgq, MSG_SIZE, 20, 4);
+K_MSGQ_DEFINE(uart1_msgq, MSG_SIZE, 20, 4);
 
 static const struct device *const uart0_dev = DEVICE_DT_GET(UART0_DEVICE_NODE);
 static const struct device *const uart1_dev = DEVICE_DT_GET(UART1_DEVICE_NODE);
@@ -36,6 +40,16 @@ static int rx_buf0_pos;
 /* receive buffer used in UART ISR callback */
 static char rx_buf1[MSG_SIZE];
 static int rx_buf1_pos;
+
+K_THREAD_STACK_DEFINE(threadb_stack_area, STACKSIZE);
+struct k_thread threadb_data;
+
+K_THREAD_STACK_DEFINE(thread0_stack_area, STACKSIZE);
+struct k_thread thread0_data;
+
+K_THREAD_STACK_DEFINE(thread1_stack_area, STACKSIZE);
+struct k_thread thread1_data;
+
 
 /*
  * Read characters from UART until line end is detected. Afterwards push the
@@ -127,13 +141,58 @@ void print_uart1(char *buf)
 	}
 }
 
+void blink_thread(void *, void *, void *)
+{
+	printk("blink thread\n\r");
+	
+	/*toggle the led*/
+	while(1) {
+		gpio_pin_toggle_dt(&led);
+    	k_msleep(SLEEP_TIME_MS);
+	}
+}
+
+void uart0_thread(void *, void *, void *)
+{
+	char tx_buf0[MSG_SIZE];
+
+	printk("uart0 thread\n\r");
+
+	/* indefinitely wait for strings, then echo back */
+	while (1) {
+
+		if (k_msgq_get(&uart0_msgq, &tx_buf0, K_FOREVER) == 0) {
+			print_uart0(tx_buf0);
+			print_uart0("\r\n");
+		}
+	}
+
+}
+
+void uart1_thread(void *, void *, void *)
+{
+	char tx_buf1[MSG_SIZE];
+
+	printk("uart1 thread\n\r");
+
+	/* indefinitely wait for strings, then echo back */
+	while (1) {
+
+	    if (k_msgq_get(&uart1_msgq, &tx_buf1, K_FOREVER) == 0) {
+			print_uart1(tx_buf1);
+			print_uart1("\r\n");
+	    }
+	}
+
+}
+
 
 int main(void)
 {
 	int ret;
-	
-	char tx_buf0[MSG_SIZE];
-	char tx_buf1[MSG_SIZE];
+
+    printk("starting main\n\r");
+
 
 	if (!device_is_ready(uart0_dev)) {
 		printk("UART0 device not found!");
@@ -184,24 +243,44 @@ int main(void)
 	}
 	uart_irq_rx_enable(uart1_dev);
 
+	print_uart0("UART0: Hello!\r\n");
+	print_uart1("UART1: Hello!\r\n");
 
-	print_uart0("UART0: Hello! I'm your echo bot.\r\n");
-	print_uart0("UART0: Tell me something and press enter:\r\n");
+	k_thread_create(&threadb_data, threadb_stack_area,
+					K_THREAD_STACK_SIZEOF(threadb_stack_area),
+					blink_thread,
+					NULL, NULL, NULL,
+					PRIORITY, 0, K_MSEC(500));
+	k_thread_start(&threadb_data);
 
-	print_uart1("UART1: Hello! I'm your echo bot.\r\n");
-	print_uart1("UART1: Tell me something and press enter:\r\n");
+	k_thread_create(&thread0_data, thread0_stack_area,
+                    K_THREAD_STACK_SIZEOF(thread0_stack_area),
+                    uart0_thread,
+                    NULL, NULL, NULL,
+                    PRIORITY, 0, K_MSEC(500));
+    k_thread_start(&thread0_data);
 
-    //todo - create a separate thread for each uart
+	k_thread_create(&thread1_data, thread1_stack_area,
+                    K_THREAD_STACK_SIZEOF(thread1_stack_area),
+                    uart1_thread,
+                    NULL, NULL, NULL,
+                    PRIORITY, 0, K_MSEC(500));
+    k_thread_start(&thread1_data);
 
-	/* indefinitely wait for input from the user */
-	//while (k_msgq_get(&uart1_msgq, &tx_buf1, K_FOREVER) == 0) {
-	while (1) {
-		gpio_pin_toggle_dt(&led);
-		print_uart1("ABC");
-		//print_uart1(tx_buf1);
-		//print_uart1("\r\n");
+	//the job is done. do nothing for now.
+	while (1)
+	{
 		k_msleep(SLEEP_TIME_MS);
 	}
+	
 
 	return 0;
 }
+
+
+/* Static way to define threads */
+/*
+K_THREAD_DEFINE(blink_thread_id, STACKSIZE, blink_thread, NULL, NULL, NULL, PRIORITY, 0, 0);
+K_THREAD_DEFINE(uart0_thread_id, STACKSIZE, uart0_thread, NULL, NULL, NULL, PRIORITY, 0, 0);
+K_THREAD_DEFINE(uart1_thread_id, STACKSIZE, uart1_thread, NULL, NULL, NULL, PRIORITY, 0, 0);
+*/
