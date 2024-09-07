@@ -10,6 +10,11 @@
 #include <zephyr/drivers/gpio.h>
 #include <string.h>
 
+/*TODO
+  - Verify checksum to confirm integrity of messages. Report error if messages are corrupted.
+  - Pass in references to the specific uart device to reduce duplication of functions.
+*/
+
 #define UART0_DEVICE_NODE DT_CHOSEN(stupid_uart)
 #define UART1_DEVICE_NODE DT_CHOSEN(dumb_uart)
 
@@ -144,7 +149,7 @@ void print_uart1(char *buf)
 void blink_thread(void *, void *, void *)
 {
 	printk("blink thread\n\r");
-	
+
 	/*toggle the led*/
 	while(1) {
 		gpio_pin_toggle_dt(&led);

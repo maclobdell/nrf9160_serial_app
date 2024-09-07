@@ -17,7 +17,7 @@ source env.sh
 ## Build With
 
 ```
-west build ./ --board nrf9160dk_nrf9160_ns -d ./build -DCONF_FILE="prj.conf"  -DEXTRA_DTC_OVERLAY_FILE="uart_dt.overlay" --pristine
+west build ./ --board nrf9160dk_nrf9160_ns -d ./build -DCONF_FILE="prj.conf"  -DEXTRA_DTC_OVERLAY_FILE="dt.overlay" --pristine
 ```
 
 ## Pin connections
@@ -33,8 +33,8 @@ west build ./ --board nrf9160dk_nrf9160_ns -d ./build -DCONF_FILE="prj.conf"  -D
   (nRF91) P0.29/APP1_TXD 
   (nRF91) P0.28/APP1_RXD 
     CONNECTS TO 
-  (nRF53) LTE-TXD  P0.03   nRF52_TXD
-  (nRF53) LTE-RXD  P0.05   nRF52_RXD
+  (nRF53)  P0.05 M.2 pin 63 nRF53_TXD
+  (nRF53)  P0.16 M.2 pin 47 nRF53_RXD
 ```
 
 ### NEW BOARD
@@ -50,8 +50,8 @@ west build ./ --board nrf9160dk_nrf9160_ns -d ./build -DCONF_FILE="prj.conf"  -D
   (nRF91)  LTE-APP2-TXD (pin 69) P0.01
   (nRF91)  LTE-APP2-RXD (pin 67) P0.00
      CONNECTS TO 
-  (nRF53) nRF53-TXD (pin 63) P0.03
-  (nRF53) nRF54-RXD (pin 47) P0.05
+  (nRF53) nRF53-TXD (pin 63) P0.05
+  (nRF53) nRF53-RXD (pin 47) P0.16
 ```
 
 Note: there is also a way to dynamically set uart configuration in the code instead of using the device tree overlay
